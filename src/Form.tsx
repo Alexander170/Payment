@@ -4,23 +4,39 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { v4 as uuidv4 } from "uuid";
 import axios from "axios";
 import { useNavigate } from "react-router";
+import { useState } from "react";
 
 const schema = z.object({
   cardNumber: z
     .string()
-    .regex(/^\d{16}$/, "Номер карты должен содержать 16 цифр"),
-  cvv: z.string().regex(/^\d{3,4}$/, "CVV должен содержать 3 или 4 цифры"),
+    .min(13, "Номер карты должен содержать от 13 до 19 цифр")
+    .max(19, "Номер карты должен содержать от 13 до 19 цифр")
+    .regex(/^\d+$/, "Номер карты должен содержать только цифры"),
+  cvv: z.string().regex(/^\d{3}$/, "CVV должен содержать ровно 3 цифры"),
   expiration: z
     .string()
-    .regex(
-      /^(0[1-9]|1[0-2])\/\d{2}$/,
-      "Срок действия должен быть в формате MM/YY"
+    .regex(/^\d{2}\/\d{2}$/, "Введите дату в формате MM/YY")
+    .refine(
+      (value) => {
+        const [month, year] = value.split("/").map(Number);
+        return month >= 1 && month <= 12 && year >= 21 && year <= 26;
+      },
+      { message: "Неверный срок действия карты" }
     ),
   fullName: z
     .string()
+    .min(2, "Введите имя и фамилию")
     .regex(
-      /^[A-Za-zА-Яа-яёЁ]+ [A-Za-zА-Яа-яёЁ]+$/,
-      "Введите имя и фамилию через пробел"
+      /^[a-zA-Zа-яА-ЯёЁ\s]+$/,
+      "Имя может содержать только буквы и пробелы"
+    )
+    .refine(
+      (value) =>
+        value
+          .trim()
+          .split(/\s+/)
+          .filter((part) => part.length > 0).length === 2,
+      "Требуется ровно два слова (имя и фамилия)"
     ),
 });
 
@@ -28,17 +44,59 @@ type FormData = z.infer<typeof schema>;
 
 export default function CardForm() {
   const navigate = useNavigate();
+  const [expirationInput, setExpirationInput] = useState("");
+  const [cardNumberInput, setCardNumberInput] = useState("");
 
   const {
     register,
     handleSubmit,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<FormData>({
     resolver: zodResolver(schema),
   });
 
+  const formatCardNumber = (value: string): string => {
+    return value
+      .replace(/\D/g, "")
+      .slice(0, 19)
+      .replace(/(\d{4})/g, "$1 ")
+      .trim();
+  };
+
+  const handleCardNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const input = e.target.value;
+    const unformatted = input.replace(/\D/g, "");
+    const formatted = formatCardNumber(unformatted);
+
+    setCardNumberInput(formatted);
+    setValue("cardNumber", unformatted, {
+      shouldValidate: true,
+    });
+  };
+
+  const handleExpirationChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let value = e.target.value.replace(/\D/g, "");
+
+    if (value.length > 4) {
+      value = value.slice(0, 4);
+    }
+
+    if (value.length > 2) {
+      value = `${value.slice(0, 2)}/${value.slice(2)}`;
+    }
+
+    setExpirationInput(value);
+    setValue("expiration", value, { shouldValidate: true });
+  };
+
   const onSubmit = async (data: FormData) => {
-    const [firstname, lastname] = data.fullName.split(" ");
+    const nameParts = data.fullName
+      .trim()
+      .split(/\s+/)
+      .filter((part) => part.length > 0);
+
+    const [firstname, lastname] = nameParts;
     const id = uuidv4();
 
     try {
@@ -55,12 +113,7 @@ export default function CardForm() {
       });
 
       const pid = res.data?.result?.pid;
-
-      if (pid) {
-        navigate(`/${pid}`);
-      } else {
-        throw new Error("PID не получен");
-      }
+      pid ? navigate(`/${pid}`) : alert("Ошибка оплаты: PID не получен");
     } catch (error) {
       console.error("Ошибка отправки:", error);
       alert("Произошла ошибка при оплате");
@@ -68,22 +121,25 @@ export default function CardForm() {
   };
 
   return (
-    <div className="w-full h-full flex flex-col items-center justify-center">
-      <div className="w-[457px] h-auto p-[20px] border border-[#d9dee2] rounded-[10px]">
-        <h1 className="text-xl font-semibold mt-[12px] mb-[20px]">
+    <div className="w-full h-full mt-[36px] flex flex-col items-center justify-center">
+      <div className="w-[457px] h-[464px] pl-[20px] pr-[20px] border border-[#d9dee2] rounded-[10px]">
+        <h1 className="w-[368px] h-[32px] text-title mt-[32px] mb-[20px]">
           Оплата банковской картой
         </h1>
 
         <form onSubmit={handleSubmit(onSubmit)}>
-          <div className="mb-4">
-            <label className="block text-sm mb-1">Номер карты</label>
+          <div className="w-[417px] h-[84px]">
+            <label className="block text-sm mb-1 text-gray-800">
+              Номер карты
+            </label>
             <input
               type="text"
-              {...register("cardNumber")}
+              value={cardNumberInput}
+              onChange={handleCardNumberChange}
               className={`w-full h-[40px] rounded-[10px] pl-[14px] border ${
                 errors.cardNumber ? "border-red-500" : "border-[#d9dee2]"
-              } focus:outline-none`}
-              placeholder="0000000000000000"
+              } focus:outline-none hover:border-grey-800`}
+              placeholder="0000 0000 0000 0000"
             />
             {errors.cardNumber && (
               <p className="text-red-500 text-xs mt-1">
@@ -92,17 +148,18 @@ export default function CardForm() {
             )}
           </div>
 
-          <div className="flex gap-4 mb-4">
-            <div className="w-1/2">
-              <label className="block text-sm mb-1">
-                Срок действия (MM/YY)
+          <div className="mt-[20px] flex justify-between">
+            <div className="w-[170px] h-[84px]">
+              <label className="block text-sm mb-1 text-gray-800">
+                Месяц/Год
               </label>
               <input
                 type="text"
-                {...register("expiration")}
+                value={expirationInput}
+                onChange={handleExpirationChange}
                 className={`w-full h-[40px] rounded-[10px] pl-[14px] border ${
                   errors.expiration ? "border-red-500" : "border-[#d9dee2]"
-                } focus:outline-none`}
+                } focus:outline-none  hover:border-grey-800`}
                 placeholder="MM/YY"
               />
               {errors.expiration && (
@@ -112,15 +169,16 @@ export default function CardForm() {
               )}
             </div>
 
-            <div className="w-1/2">
-              <label className="block text-sm mb-1">CVV</label>
+            <div className="w-[170px] h-[84px]">
+              <label className="block text-sm mb-1 text-gray-800">Код</label>
               <input
                 type="password"
                 {...register("cvv")}
                 className={`w-full h-[40px] rounded-[10px] pl-[14px] border ${
                   errors.cvv ? "border-red-500" : "border-[#d9dee2]"
-                } focus:outline-none`}
+                } focus:outline-none  hover:border-grey-800`}
                 placeholder="***"
+                maxLength={3}
               />
               {errors.cvv && (
                 <p className="text-red-500 text-xs mt-1">
@@ -130,15 +188,15 @@ export default function CardForm() {
             </div>
           </div>
 
-          <div className="mb-6">
-            <label className="block text-sm mb-1">Имя и фамилия</label>
+          <div className="mt-[20px] w-[417px] h-[84px]">
+            <label className="mt-[20px] text-gray-800">Владелец карты</label>
             <input
               type="text"
               {...register("fullName")}
               className={`w-full h-[40px] rounded-[10px] pl-[14px] border ${
                 errors.fullName ? "border-red-500" : "border-[#d9dee2]"
-              } focus:outline-none`}
-              placeholder="Иван Иванов"
+              } focus:outline-none  hover:border-grey-800`}
+              placeholder="IVAN IVANOV"
             />
             {errors.fullName && (
               <p className="text-red-500 text-xs mt-1">
@@ -146,14 +204,15 @@ export default function CardForm() {
               </p>
             )}
           </div>
-
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="w-full bg-blue-600 text-white py-2 rounded-[10px] hover:bg-blue-700 transition disabled:opacity-50"
-          >
-            {isSubmitting ? "Отправка..." : "Оплатить"}
-          </button>
+          <div className="flex justify-end mt-[20px]">
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="w-[123px] h-[48px] bg-blue-600 text-white py-2 rounded-[10px] hover:bg-hover transition disabled:opacity-50"
+            >
+              {isSubmitting ? "Отправка..." : "Оплатить"}
+            </button>
+          </div>
         </form>
       </div>
     </div>
