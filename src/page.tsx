@@ -47,7 +47,7 @@ const PaymentStatusChecker: React.FC<{ pid: string }> = ({ pid }) => {
 
   return (
     <div>
-      {status === "processing" && <p>Платеж обрабатывается...</p>}
+      {status === "processing" && <p>Обработка платежа...</p>}
       {status === "ok" && <Succes />}
       {status === "fail" && <Error />}
     </div>

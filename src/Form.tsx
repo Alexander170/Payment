@@ -129,7 +129,7 @@ export default function CardForm() {
 
         <form onSubmit={handleSubmit(onSubmit)}>
           <div className="w-[417px] h-[84px]">
-            <label className="block text-sm mb-1 text-gray-800">
+            <label className="block text-button mb-[4px] text-gray-800">
               Номер карты
             </label>
             <input
@@ -137,12 +137,12 @@ export default function CardForm() {
               value={cardNumberInput}
               onChange={handleCardNumberChange}
               className={`w-full h-[40px] rounded-[10px] pl-[14px] border ${
-                errors.cardNumber ? "border-red-500" : "border-[#d9dee2]"
+                errors.cardNumber ? "border-error" : "border-[#d9dee2]"
               } focus:outline-none hover:border-grey-800`}
               placeholder="0000 0000 0000 0000"
             />
             {errors.cardNumber && (
-              <p className="text-red-500 text-xs mt-1">
+              <p className="text-error text-xs mt-1">
                 {errors.cardNumber.message}
               </p>
             )}
@@ -150,7 +150,7 @@ export default function CardForm() {
 
           <div className="mt-[20px] flex justify-between">
             <div className="w-[170px] h-[84px]">
-              <label className="block text-sm mb-1 text-gray-800">
+              <label className="block text-button mb-[4px] text-gray-800">
                 Месяц/Год
               </label>
               <input
@@ -158,48 +158,50 @@ export default function CardForm() {
                 value={expirationInput}
                 onChange={handleExpirationChange}
                 className={`w-full h-[40px] rounded-[10px] pl-[14px] border ${
-                  errors.expiration ? "border-red-500" : "border-[#d9dee2]"
+                  errors.expiration ? "border-error" : "border-[#d9dee2]"
                 } focus:outline-none  hover:border-grey-800`}
                 placeholder="MM/YY"
               />
               {errors.expiration && (
-                <p className="text-red-500 text-xs mt-1">
+                <p className="text-error text-xs mt-1">
                   {errors.expiration.message}
                 </p>
               )}
             </div>
 
             <div className="w-[170px] h-[84px]">
-              <label className="block text-sm mb-1 text-gray-800">Код</label>
+              <label className="block text-button mb-[4px] text-gray-800">
+                Код
+              </label>
               <input
                 type="password"
                 {...register("cvv")}
                 className={`w-full h-[40px] rounded-[10px] pl-[14px] border ${
-                  errors.cvv ? "border-red-500" : "border-[#d9dee2]"
+                  errors.cvv ? "border-error" : "border-[#d9dee2]"
                 } focus:outline-none  hover:border-grey-800`}
                 placeholder="***"
                 maxLength={3}
               />
               {errors.cvv && (
-                <p className="text-red-500 text-xs mt-1">
-                  {errors.cvv.message}
-                </p>
+                <p className="text-error text-xs mt-1">{errors.cvv.message}</p>
               )}
             </div>
           </div>
 
           <div className="mt-[20px] w-[417px] h-[84px]">
-            <label className="mt-[20px] text-gray-800">Владелец карты</label>
+            <label className="mt-[20px] text-button mb-[4px] text-gray-800">
+              Владелец карты
+            </label>
             <input
               type="text"
               {...register("fullName")}
               className={`w-full h-[40px] rounded-[10px] pl-[14px] border ${
-                errors.fullName ? "border-red-500" : "border-[#d9dee2]"
+                errors.fullName ? "border-error" : "border-[#d9dee2]"
               } focus:outline-none  hover:border-grey-800`}
               placeholder="IVAN IVANOV"
             />
             {errors.fullName && (
-              <p className="text-red-500 text-xs mt-1">
+              <p className="text-error text-xs mt-1">
                 {errors.fullName.message}
               </p>
             )}
