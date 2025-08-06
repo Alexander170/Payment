@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useParams } from "react-router";
 import Error from "./error";
 import Succes from "./succes";
+import Payment from "./payment";
 import axios from "axios";
 
 type PaymentStatus = "processing" | "ok" | "fail";
@@ -47,7 +48,7 @@ const PaymentStatusChecker: React.FC<{ pid: string }> = ({ pid }) => {
 
   return (
     <div>
-      {status === "processing" && <p>Обработка платежа...</p>}
+      {status === "processing" && <Payment />}
       {status === "ok" && <Succes />}
       {status === "fail" && <Error />}
     </div>
