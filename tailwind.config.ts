@@ -8,6 +8,9 @@ const config = {
           primary: {
             DEFAULT: "#304ac1",
           },
+          hover: {
+            DEFAULT: "#1A2C88",
+          },
           info: {
             DEFAULT: "#20a1ff",
           },
